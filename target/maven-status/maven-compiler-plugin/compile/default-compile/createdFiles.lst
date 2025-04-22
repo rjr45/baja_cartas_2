@@ -1,7 +1,0 @@
-org\rjr\baja_cartas\app\controller\Util.class
-org\rjr\baja_cartas\app\main\Main.class
-org\rjr\baja_cartas\app\model\Cards.class
-org\rjr\baja_cartas\app\ui\BajaCartas.class
-org\rjr\baja_cartas\app\controller\ControladorBajaCartas.class
-org\rjr\baja_cartas\app\worker\WorkerDescarga.class
-org\rjr\baja_cartas\app\model\Card.class
