@@ -8,9 +8,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
 import org.rjr.baja_cartas.app.model.Card;
 import org.rjr.baja_cartas.app.ui.BajaCartas;
@@ -116,7 +115,7 @@ public class ControladorBajaCartas {
                 workerTXT.execute();
                 workerXLS.execute();
             } catch (InterruptedException | ExecutionException ex) {
-                System.out.println(ex.getMessage());
+                JOptionPane.showMessageDialog(this.bajaCartas, "Error xd", "Info", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -145,6 +144,7 @@ public class ControladorBajaCartas {
     private void habilitarUi() {
         if (this.workerDescargaDone && this.workerTxtDone && this.workerXlsDone) {
             this.manejarUi(false);
+            JOptionPane.showMessageDialog(this.bajaCartas, "Todo Listo", "Info", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 

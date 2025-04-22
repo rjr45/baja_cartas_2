@@ -35,9 +35,9 @@ public class WorkerTXT extends SwingWorker<Void, Void> {
                 sb.append(card.getName()).append("\t");
                 sb.append(slug).append("\t");
                 sb.append(card.getEdid()).append("\t");
-                sb.append(CardType.fromId(String.valueOf(card.getType()))).append("\t");
-                sb.append(Rarity.fromId(String.valueOf(card.getRarity()))).append("\t");
-                sb.append(Race.fromId(String.valueOf(card.getRace()))).append("\t");
+                sb.append(CardType.fromId(String.valueOf(card.getType())).getDisplayName()).append("\t");
+                sb.append(Rarity.fromId(String.valueOf(card.getRarity())).getDisplayName()).append("\t");
+                sb.append(Race.fromId(String.valueOf(card.getRace())).getDisplayName()).append("\t");
                 sb.append(card.getDamage()).append("\t");
                 sb.append(card.getCost()).append("\t");
                 sb.append(card.getAbility() == null ? "\t" : card.getAbility().replaceAll("\n", ""));
