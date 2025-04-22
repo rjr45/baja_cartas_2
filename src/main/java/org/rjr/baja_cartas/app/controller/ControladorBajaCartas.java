@@ -2,24 +2,47 @@ package org.rjr.baja_cartas.app.controller;
 
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
 import java.beans.PropertyChangeEvent;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JFileChooser;
-import javax.swing.JTextField;
 import javax.swing.SwingWorker;
+import org.rjr.baja_cartas.app.model.Card;
 import org.rjr.baja_cartas.app.ui.BajaCartas;
+import org.rjr.baja_cartas.app.worker.WorkerCardList;
 import org.rjr.baja_cartas.app.worker.WorkerDescarga;
+import org.rjr.baja_cartas.app.worker.WorkerTXT;
+import org.rjr.baja_cartas.app.worker.WorkerXLS;
 
 public class ControladorBajaCartas {
 
     private final BajaCartas bajaCartas;
     private String destino;
+    private boolean workerDescargaDone;
+    private boolean workerTxtDone;
+    private boolean workerXlsDone;
+    private List<Card> cardList;
+    private WorkerCardList workerCardList;
+    private WorkerDescarga workerDescarga;
+    private WorkerTXT workerTXT;
+    private WorkerXLS workerXLS;
 
     public ControladorBajaCartas(BajaCartas bajaCartas) {
         this.bajaCartas = bajaCartas;
         this.destino = "";
+        this.workerDescargaDone = true;
+        this.workerTxtDone = true;
+        this.workerXlsDone = true;
+        this.cardList = new ArrayList<>();
+        this.workerCardList = null;
+        this.workerDescarga = null;
+        this.workerTXT = null;
+        this.workerXLS = null;
     }
 
     public void run() {
@@ -44,33 +67,84 @@ public class ControladorBajaCartas {
     }
 
     private void descargar() {
-        this.bajaCartas.pgrEstado.setIndeterminate(true);
-        this.bajaCartas.btnDescargar.setEnabled(false);
-        this.bajaCartas.btnSetDestination.setEnabled(false);
-
+        this.manejarUi(true);
+        this.workerDescargaDone = false;
+        this.workerTxtDone = false;
+        this.workerXlsDone = false;
         HashMap<String, String> data = this.getData();
+        workerCardList = new WorkerCardList(data);
+        workerCardList.addPropertyChangeListener(e -> onGetCardsWorkerReady(e));
+        workerCardList.execute();
+    }
 
-        WorkerDescarga workerDescarga = new WorkerDescarga(data);
-        workerDescarga.addPropertyChangeListener(e -> onWorkerReady(e));
-        workerDescarga.execute();
+    private void manejarUi(boolean deshabilitar) {
+        this.bajaCartas.pgrEstado.setIndeterminate(deshabilitar);
+        this.bajaCartas.btnDescargar.setEnabled(!deshabilitar);
+        this.bajaCartas.btnSetDestination.setEnabled(!deshabilitar);
+        this.bajaCartas.txtEdicion.setEnabled(!deshabilitar);
+        this.bajaCartas.chkTxt.setEnabled(!deshabilitar);
+        this.bajaCartas.chkXLS.setEnabled(!deshabilitar);
+        this.bajaCartas.txtTamanoH.setEnabled(!deshabilitar);
+        this.bajaCartas.txtTamanoV.setEnabled(!deshabilitar);
     }
 
     private HashMap<String, String> getData() {
         HashMap<String, String> data = new HashMap<>(5);
         data.put("slug", this.bajaCartas.txtEdicion.getText());
         data.put("txt", String.valueOf(this.bajaCartas.chkTxt.isSelected()));
-        data.put("xls", String.valueOf(this.bajaCartas.chkXLS.isSelected()));
+        data.put("xlsx", String.valueOf(this.bajaCartas.chkXLS.isSelected()));
         data.put("size_h", this.bajaCartas.txtTamanoH.getText());
         data.put("size_v", this.bajaCartas.txtTamanoV.getText());
         data.put("ruta", this.destino);
         return data;
     }
 
-    private void onWorkerReady(PropertyChangeEvent e) {
+    private void onGetCardsWorkerReady(PropertyChangeEvent e) {
         if (e.getNewValue().equals(SwingWorker.StateValue.DONE)) {
-            this.bajaCartas.pgrEstado.setIndeterminate(false);
-            this.bajaCartas.btnDescargar.setEnabled(true);
-            this.bajaCartas.btnSetDestination.setEnabled(true);
+            try {
+                this.cardList = this.workerCardList.get();
+
+                workerDescarga = new WorkerDescarga(this.getData(), cardList);
+                workerTXT = new WorkerTXT(this.getData(), cardList);
+                workerXLS = new WorkerXLS(this.getData(), cardList);
+
+                workerDescarga.addPropertyChangeListener(downloadWorker -> onDownloadCardsWorkerReady(downloadWorker));
+                workerTXT.addPropertyChangeListener(workerTxt -> onTxtWorkerReady(workerTxt));
+                workerXLS.addPropertyChangeListener(workerXls -> onWorkerXlsReady(workerXls));
+
+                workerDescarga.execute();
+                workerTXT.execute();
+                workerXLS.execute();
+            } catch (InterruptedException | ExecutionException ex) {
+                System.out.println(ex.getMessage());
+            }
+        }
+    }
+
+    private void onDownloadCardsWorkerReady(PropertyChangeEvent e) {
+        if (e.getNewValue().equals(SwingWorker.StateValue.DONE)) {
+            this.workerDescargaDone = true;
+            this.habilitarUi();
+        }
+    }
+
+    private void onTxtWorkerReady(PropertyChangeEvent e) {
+        if (e.getNewValue().equals(SwingWorker.StateValue.DONE)) {
+            this.workerTxtDone = true;
+            this.habilitarUi();
+        }
+    }
+
+    private void onWorkerXlsReady(PropertyChangeEvent e) {
+        if (e.getNewValue().equals(SwingWorker.StateValue.DONE)) {
+            this.workerXlsDone = true;
+            this.habilitarUi();
+        }
+    }
+
+    private void habilitarUi() {
+        if (this.workerDescargaDone && this.workerTxtDone && this.workerXlsDone) {
+            this.manejarUi(false);
         }
     }
 
