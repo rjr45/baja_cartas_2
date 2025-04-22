@@ -9,7 +9,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <exec.mainClass>org.rjr.baja_cartas.app.BajaCartas</exec.mainClass>
+        <exec.mainClass>org.rjr.baja_cartas.app.main.Main</exec.mainClass>
     </properties>
     <dependencies>
         <dependency>
@@ -34,4 +34,20 @@
             <version>0.4.20</version>
         </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>org.rjr.baja_cartas.app.main.Main</mainClass> 
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

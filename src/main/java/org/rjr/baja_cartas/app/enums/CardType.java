@@ -40,7 +40,6 @@ public enum CardType {
         return null;
     }
 
-    // Buscar por id
     public static CardType fromId(String id) {
         for (CardType t : values()) {
             if (t.id.equals(id)) {
