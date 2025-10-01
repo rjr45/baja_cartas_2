@@ -115,6 +115,11 @@ public class ControladorBajaCartas {
                 workerTXT.execute();
                 workerXLS.execute();
             } catch (InterruptedException | ExecutionException ex) {
+                this.workerDescargaDone = true;
+                this.workerTxtDone = true;
+                this.workerXlsDone = true;
+                this.habilitarUi();
+                System.out.println(ex.getMessage());
                 JOptionPane.showMessageDialog(this.bajaCartas, "Error xd", "Info", JOptionPane.ERROR_MESSAGE);
             }
         }

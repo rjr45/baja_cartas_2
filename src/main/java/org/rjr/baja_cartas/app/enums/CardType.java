@@ -1,6 +1,7 @@
 package org.rjr.baja_cartas.app.enums;
 
 public enum CardType {
+    NO_ENCONTRADO("0", "no encontrado", "N/A"),
     ALIADO("1", "aliado", "Aliado"),
     TALISMAN("2", "talisman", "Talismán"),
     ARMA("3", "arma", "Arma"),

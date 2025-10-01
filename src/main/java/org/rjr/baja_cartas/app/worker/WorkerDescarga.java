@@ -26,10 +26,11 @@ public class WorkerDescarga extends SwingWorker<Void, Void> {
             for (Card card : this.cardList) {
                 String index = card.getEdid();
                 URL url = new URL(String.format(URLBaseCard, card.getEd_edid(), index));
-                String destino = String.format(this.data.get("ruta") + "\\%s.jpg", index);
+                String destino = String.format(this.data.get("ruta") + "\\%s.png", index);
+                System.out.println(url.toString());
                 Thumbnails.of(url)
                         .size(horizontal, vertical)
-                        .outputFormat("jpg")
+                        .outputFormat("png")
                         .toFile(destino);
             }
         }

@@ -46,17 +46,21 @@ public class WorkerXLS extends SwingWorker<Void, Void> {
             header.createCell(7).setCellValue("Costo");
             header.createCell(8).setCellValue("habilidad");
 
-            for (Card card : this.cardList) {
-                XSSFRow row = sheet.createRow(rowCount++);
-                row.createCell(0).setCellValue(card.getName());
-                row.createCell(1).setCellValue(slug);
-                row.createCell(2).setCellValue(card.getEdid());
-                row.createCell(3).setCellValue(CardType.fromId(String.valueOf(card.getType())).getDisplayName());
-                row.createCell(4).setCellValue(Rarity.fromId(String.valueOf(card.getRarity())).getDisplayName());
-                row.createCell(5).setCellValue(Race.fromId(String.valueOf(card.getRace())).getDisplayName());
-                row.createCell(6).setCellValue(card.getDamage());
-                row.createCell(7).setCellValue(card.getCost());
-                row.createCell(8).setCellValue(card.getAbility());
+            try {
+                for (Card card : this.cardList) {
+                    XSSFRow row = sheet.createRow(rowCount++);
+                    row.createCell(0).setCellValue(card.getName());
+                    row.createCell(1).setCellValue(slug);
+                    row.createCell(2).setCellValue(card.getEdid());
+                    row.createCell(3).setCellValue(CardType.fromId(String.valueOf(card.getType())).getDisplayName());
+                    row.createCell(4).setCellValue(Rarity.fromId(String.valueOf(card.getRarity())).getDisplayName());
+                    row.createCell(5).setCellValue(Race.fromId(String.valueOf(card.getRace())).getDisplayName());
+                    row.createCell(6).setCellValue(card.getDamage());
+                    row.createCell(7).setCellValue(card.getCost());
+                    row.createCell(8).setCellValue(card.getAbility());
+                }
+            }catch(Exception ex){
+                System.out.println("X_X");
             }
 
             try (FileOutputStream out = new FileOutputStream(String.format("%s\\%s.xlsx", destino, slug))) {
