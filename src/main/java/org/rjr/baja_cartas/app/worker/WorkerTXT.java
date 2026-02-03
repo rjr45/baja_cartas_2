@@ -29,22 +29,22 @@ public class WorkerTXT extends SwingWorker<Void, Void> {
             StringBuilder sb = new StringBuilder();
             String slug = this.data.get("slug");
 
-            sb.append("Nombre\tEdición\tId\tTipo\tRareza\tRaza\tDaño\tCosto\tHabilidad\n");
+            sb.append("Nombre;Edición;Id;Tipo;Rareza;Raza;Daño;Costo;Habilidad\n");
 
             for (Card card : this.cardList) {
-                sb.append(card.getName()).append("\t");
-                sb.append(slug).append("\t");
-                sb.append(card.getEdid()).append("\t");
-                sb.append(CardType.fromId(String.valueOf(card.getType())).getDisplayName()).append("\t");
-                sb.append(Rarity.fromId(String.valueOf(card.getRarity())).getDisplayName()).append("\t");
-                sb.append(Race.fromId(String.valueOf(card.getRace())).getDisplayName()).append("\t");
-                sb.append(card.getDamage()).append("\t");
-                sb.append(card.getCost()).append("\t");
-                sb.append(card.getAbility() == null ? "\t" : card.getAbility().replaceAll("\n", ""));
+                sb.append(card.getName()).append(";");
+                sb.append(card.getEd_slug()).append(";");
+                sb.append(card.getEdid()).append(";");
+                sb.append(CardType.fromId(String.valueOf(card.getType())).getDisplayName()).append(";");
+                sb.append(Rarity.fromId(String.valueOf(card.getRarity())).getDisplayName()).append(";");
+                sb.append(Race.fromId(String.valueOf(card.getRace())).getDisplayName()).append(";");
+                sb.append(card.getDamage()).append(";");
+                sb.append(card.getCost()).append(";");
+                sb.append("'").append(card.getAbility() == null ? "'" : card.getAbility().replaceAll("\n", "")).append("'");
                 sb.append("\n");
             }
 
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(String.format(this.data.get("ruta") + "\\%s", slug + ".txt")))) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(String.format(this.data.get("ruta") + "\\%s", slug + ".csv")))) {
                 writer.write(sb.toString());
                 System.out.println("Archivo escrito exitosamente.");
             } catch (IOException e) {

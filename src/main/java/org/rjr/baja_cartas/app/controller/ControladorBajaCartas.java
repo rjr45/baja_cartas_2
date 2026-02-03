@@ -4,6 +4,8 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.beans.PropertyChangeEvent;
 import java.io.File;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +32,8 @@ public class ControladorBajaCartas {
     private WorkerDescarga workerDescarga;
     private WorkerTXT workerTXT;
     private WorkerXLS workerXLS;
+
+    private static final DateTimeFormatter LOG_TIME = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
     public ControladorBajaCartas(BajaCartas bajaCartas) {
         this.bajaCartas = bajaCartas;
@@ -67,6 +71,12 @@ public class ControladorBajaCartas {
 
     private void descargar() {
         this.manejarUi(true);
+        bajaCartas.pgrEstado.setIndeterminate(false);
+        bajaCartas.pgrEstado.setMinimum(0);
+        bajaCartas.pgrEstado.setMaximum(this.cardList.size());
+        bajaCartas.pgrEstado.setValue(0);
+        bajaCartas.pgrEstado.setStringPainted(true);
+        bajaCartas.pgrEstado.setString("0.00%");
         this.workerDescargaDone = false;
         this.workerTxtDone = false;
         this.workerXlsDone = false;
@@ -102,8 +112,9 @@ public class ControladorBajaCartas {
         if (e.getNewValue().equals(SwingWorker.StateValue.DONE)) {
             try {
                 this.cardList = this.workerCardList.get();
+                bajaCartas.pgrEstado.setMaximum(this.cardList.size());
 
-                workerDescarga = new WorkerDescarga(this.getData(), cardList);
+                workerDescarga = new WorkerDescarga(this.getData(), cardList, this::log);
                 workerTXT = new WorkerTXT(this.getData(), cardList);
                 workerXLS = new WorkerXLS(this.getData(), cardList);
 
@@ -126,6 +137,13 @@ public class ControladorBajaCartas {
     }
 
     private void onDownloadCardsWorkerReady(PropertyChangeEvent e) {
+        if ("cartaActual".equals(e.getPropertyName())) {
+            int actual = (Integer) e.getNewValue();
+            double porcentaje = (((double) actual) / this.cardList.size()) * 100;
+            bajaCartas.pgrEstado.setValue(actual);
+            bajaCartas.pgrEstado.setString(String.format("%.2f %%", porcentaje));
+        }
+
         if (e.getNewValue().equals(SwingWorker.StateValue.DONE)) {
             this.workerDescargaDone = true;
             this.habilitarUi();
@@ -164,6 +182,12 @@ public class ControladorBajaCartas {
                 }
             }
         };
+    }
+
+    private void log(String msg) {
+        String hora = LocalTime.now().format(LOG_TIME);
+        bajaCartas.txtLogDescarga.append(String.format("[%s] %s%n", hora, msg));
+        bajaCartas.txtLogDescarga.setCaretPosition(bajaCartas.txtLogDescarga.getDocument().getLength());
     }
 
 }

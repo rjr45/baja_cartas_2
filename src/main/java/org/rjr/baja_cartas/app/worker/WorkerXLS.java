@@ -50,7 +50,7 @@ public class WorkerXLS extends SwingWorker<Void, Void> {
                 for (Card card : this.cardList) {
                     XSSFRow row = sheet.createRow(rowCount++);
                     row.createCell(0).setCellValue(card.getName());
-                    row.createCell(1).setCellValue(slug);
+                    row.createCell(1).setCellValue(card.getEd_slug());
                     row.createCell(2).setCellValue(card.getEdid());
                     row.createCell(3).setCellValue(CardType.fromId(String.valueOf(card.getType())).getDisplayName());
                     row.createCell(4).setCellValue(Rarity.fromId(String.valueOf(card.getRarity())).getDisplayName());
