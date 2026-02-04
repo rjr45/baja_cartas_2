@@ -3,6 +3,7 @@ package org.rjr.baja_cartas.app.worker;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -19,6 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import javax.swing.SwingWorker;
@@ -44,6 +47,7 @@ public class WorkerDescarga extends SwingWorker<Void, String> {
 
     @Override
     protected Void doInBackground() throws Exception {
+        ImageIO.setUseCache(false);
 
         int horizontal = data.get("size_h").length() > 0
                 ? Integer.parseInt(data.get("size_h"))
@@ -90,24 +94,17 @@ public class WorkerDescarga extends SwingWorker<Void, String> {
                     byte[] bytes = descargarBytes(card);
                     processPool.submit(() -> {
                         try {
-                            BufferedImage img = procesarImagen(bytes, horizontal, vertical);
-
-                            diskPool.submit(() -> {
-                                try {
-                                    guardarImagen(card, img);
-
-                                    int hechas = completadas.incrementAndGet();
-                                    actualizarProgreso(hechas, total, card);
-
-                                } catch (IOException e) {
-                                    publish("Error guardando " + card.getName());
-                                } finally {
-                                    latch.countDown();
-                                }
-                            });
-
-                        } catch (IOException e) {
-                            publish("Error procesando " + card.getName());
+                            procesarYGuardar(bytes, horizontal, vertical, card);
+                            int hechas = completadas.incrementAndGet();
+                            
+                            if (hechas % 100 == 0) {
+                                System.gc();
+                            }
+                            
+                            actualizarProgreso(hechas, total, card);
+                        } catch (IOException ex) {
+                            Logger.getLogger(WorkerDescarga.class.getName()).log(Level.SEVERE, null, ex);
+                        } finally {
                             latch.countDown();
                         }
                     });
@@ -144,30 +141,27 @@ public class WorkerDescarga extends SwingWorker<Void, String> {
         }
     }
 
-    private BufferedImage procesarImagen(byte[] data, int h, int v) throws IOException {
-
-        BufferedImage original = ImageIO.read(new ByteArrayInputStream(data));
-
-        if (h <= 0 || v <= 0) {
-            return Thumbnails.of(original)
-                    .scale(1.0)
-                    .asBufferedImage();
-        }
-
-        return Thumbnails.of(original)
-                .size(h, v)
-                .asBufferedImage();
-    }
-
-    private void guardarImagen(Card card, BufferedImage img) throws IOException {
+    private void procesarYGuardar(byte[] dataImage, int h, int v, Card card) throws IOException {
         String destino = String.format(
-                data.get("ruta") + "\\%s\\%s\\%s.png",
+                this.data.get("ruta") + "\\%s\\%s\\%s.png",
                 card.getEd_slug(),
                 CardType.fromId(String.valueOf(card.getType())).getSlug(),
                 card.getId() + "_" + card.getName()
         );
 
-        ImageIO.write(img, "png", Paths.get(destino).toFile());
+        try (ByteArrayInputStream in = new ByteArrayInputStream(dataImage)) {
+
+            Thumbnails.Builder<?> builder = Thumbnails.of(in);
+
+            if (h > 0 && v > 0) {
+                builder.size(h, v);
+            } else {
+                builder.scale(1);
+            }
+
+            builder.outputFormat("png")
+                    .toFile(destino);
+        }
     }
 
     private void actualizarProgreso(int hechas, int total, Card card) {
