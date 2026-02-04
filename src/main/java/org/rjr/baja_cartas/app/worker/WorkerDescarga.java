@@ -11,7 +11,10 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -171,7 +174,7 @@ public class WorkerDescarga extends SwingWorker<Void, String> {
         firePropertyChange("cartaActual", null, hechas);
 
         publish(String.format(
-                "Carta %d/%d - %s - (%s)",
+                "Carta %d/%d - %s - %s",
                 hechas,
                 total,
                 card.getEd_slug(),
