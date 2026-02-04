@@ -1,5 +1,6 @@
 package org.rjr.baja_cartas.app.controller;
 
+import java.awt.Color;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.beans.PropertyChangeEvent;
@@ -13,6 +14,10 @@ import java.util.concurrent.ExecutionException;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 import org.rjr.baja_cartas.app.model.Card;
 import org.rjr.baja_cartas.app.ui.BajaCartas;
 import org.rjr.baja_cartas.app.worker.WorkerCardList;
@@ -52,6 +57,7 @@ public class ControladorBajaCartas {
         this.bajaCartas.btnSetDestination.addActionListener(e -> setDestino());
         this.bajaCartas.btnDescargar.addActionListener(e -> descargar());
         this.bajaCartas.txtEdicion.addFocusListener(this.focusLostTxtEdicion());
+        this.ramLog();
         this.bajaCartas.setLocationRelativeTo(null);
         this.bajaCartas.setVisible(true);
     }
@@ -139,6 +145,9 @@ public class ControladorBajaCartas {
     private void onDownloadCardsWorkerReady(PropertyChangeEvent e) {
         if ("cartaActual".equals(e.getPropertyName())) {
             int actual = (Integer) e.getNewValue();
+            if (actual % 20 == 0) {
+                ramLog();
+            }
             double porcentaje = (((double) actual) / this.cardList.size()) * 100;
             bajaCartas.pgrEstado.setValue(actual);
             bajaCartas.pgrEstado.setString(String.format("%.2f %%", porcentaje));
@@ -184,10 +193,29 @@ public class ControladorBajaCartas {
         };
     }
 
-    private void log(String msg) {
+    private void log(String msg, Color color) {
         String hora = LocalTime.now().format(LOG_TIME);
-        bajaCartas.txtLogDescarga.append(String.format("[%s] %s%n", hora, msg));
-        bajaCartas.txtLogDescarga.setCaretPosition(bajaCartas.txtLogDescarga.getDocument().getLength());
+        StyledDocument doc = bajaCartas.txtLogDescarga.getStyledDocument();
+
+        Style style = bajaCartas.txtLogDescarga.addStyle("logStyle", null);
+        StyleConstants.setForeground(style, color);
+        try {
+            doc.insertString(doc.getLength(), hora + "-" + msg + "\n", style);
+            bajaCartas.txtLogDescarga.setCaretPosition(doc.getLength()); // scroll automático
+        } catch (BadLocationException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void ramLog() {
+        Runtime rt = Runtime.getRuntime();
+
+        long max = rt.maxMemory();
+        long total = rt.totalMemory();
+        long free = rt.freeMemory();
+        long used = total - free;
+
+        bajaCartas.lblRam.setText(String.format("RAM -> Usada: %.2f MB ", used / 1024d / 1024d));
     }
 
 }

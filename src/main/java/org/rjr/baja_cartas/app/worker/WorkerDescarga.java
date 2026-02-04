@@ -1,5 +1,6 @@
 package org.rjr.baja_cartas.app.worker;
 
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -12,11 +13,15 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -33,13 +38,13 @@ public class WorkerDescarga extends SwingWorker<Void, String> {
 
     private final HashMap<String, String> data;
     private final List<Card> cardList;
-    private final Consumer<String> onLog;
+    private final BiConsumer<String, Color> onLog;
 
     private static final String URL_BASE_CARD = "https://api.myl.cl/static/cards/%s/%s.png";
 
     private final AtomicInteger completadas = new AtomicInteger(0);
 
-    public WorkerDescarga(HashMap<String, String> data, List<Card> cardList, Consumer<String> onLog) {
+    public WorkerDescarga(HashMap<String, String> data, List<Card> cardList, BiConsumer<String, Color> onLog) {
         this.data = data;
         this.cardList = cardList;
         this.onLog = onLog;
@@ -77,14 +82,25 @@ public class WorkerDescarga extends SwingWorker<Void, String> {
 
         int total = cardList.size();
 
-        ExecutorService downloadPool = Executors.newFixedThreadPool(6);
-        ExecutorService processPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        ExecutorService diskPool = Executors.newFixedThreadPool(2);
+        ThreadPoolExecutor downloadPool = new ThreadPoolExecutor(
+                8,
+                8,
+                60L, TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(32),
+                new ThreadPoolExecutor.CallerRunsPolicy()
+        );
+        ThreadPoolExecutor processPool = new ThreadPoolExecutor(
+                6,
+                6,
+                60L, TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(12),
+                new ThreadPoolExecutor.CallerRunsPolicy()
+        );
 
         CountDownLatch latch = new CountDownLatch(total);
 
         for (Card card : cardList) {
-            downloadPool.submit(() -> {
+            downloadPool.execute(() -> {
                 if (isCancelled()) {
                     latch.countDown();
                     return;
@@ -92,25 +108,34 @@ public class WorkerDescarga extends SwingWorker<Void, String> {
 
                 try {
                     byte[] bytes = descargarBytes(card);
-                    processPool.submit(() -> {
+                    processPool.execute(() -> {
                         try {
-                            procesarYGuardar(bytes, horizontal, vertical, card);
                             int hechas = completadas.incrementAndGet();
+                            procesarYGuardar(bytes, horizontal, vertical, card);
                             
-                            if (hechas % 100 == 0) {
+                            if (hechas % 20 == 0) {
                                 System.gc();
                             }
                             
-                            actualizarProgreso(hechas, total, card);
+                            if (hechas % 20 == 0) {
+                                publish(String.format(
+                                        "POOL D[%d/%d] P[%d/%d]",
+                                        downloadPool.getActiveCount(),
+                                        downloadPool.getQueue().size(),
+                                        processPool.getActiveCount(),
+                                        processPool.getQueue().size()
+                                ));
+                            }
+                            actualizarProgreso(hechas, total, card, "ok");
                         } catch (IOException ex) {
-                            Logger.getLogger(WorkerDescarga.class.getName()).log(Level.SEVERE, null, ex);
+                            actualizarProgreso(completadas.get(), total, card, "error");
                         } finally {
                             latch.countDown();
                         }
                     });
 
                 } catch (IOException e) {
-                    publish("Error descargando " + card.getName());
+                    actualizarProgreso(completadas.incrementAndGet(), total, card, "error");
                     latch.countDown();
                 }
             });
@@ -118,9 +143,10 @@ public class WorkerDescarga extends SwingWorker<Void, String> {
 
         downloadPool.shutdown();
         latch.await();
-
         processPool.shutdown();
-        diskPool.shutdown();
+
+        downloadPool.awaitTermination(1, TimeUnit.HOURS);
+        processPool.awaitTermination(1, TimeUnit.HOURS);
 
         publish("Proceso terminado");
         return null;
@@ -164,11 +190,22 @@ public class WorkerDescarga extends SwingWorker<Void, String> {
         }
     }
 
-    private void actualizarProgreso(int hechas, int total, Card card) {
+    private void actualizarProgreso(int hechas, int total, Card card, String estado) {
         firePropertyChange("cartaActual", null, hechas);
 
+        if ("ok".equals(estado)) {
+            publish(String.format(
+                    "Carta %d/%d - %s - %s",
+                    hechas,
+                    total,
+                    card.getEd_slug(),
+                    card.getName()
+            ));
+            return;
+        }
+
         publish(String.format(
-                "Carta %d/%d - %s - %s",
+                "Error, no encontrada: Carta %d/%d - %s - %s",
                 hechas,
                 total,
                 card.getEd_slug(),
@@ -179,7 +216,11 @@ public class WorkerDescarga extends SwingWorker<Void, String> {
     @Override
     protected void process(List<String> chunks) {
         for (String msg : chunks) {
-            onLog.accept(msg);
+            if (msg.startsWith("Error")) {
+                onLog.accept(msg, Color.RED);
+            } else {
+                onLog.accept(msg, new Color(0, 150, 0));
+            }
         }
     }
 
