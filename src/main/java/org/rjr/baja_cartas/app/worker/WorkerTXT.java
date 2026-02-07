@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import javax.swing.SwingWorker;
+import static org.rjr.baja_cartas.app.controller.Util.limpiarTexto;
 import org.rjr.baja_cartas.app.enums.CardType;
 import org.rjr.baja_cartas.app.enums.Race;
 import org.rjr.baja_cartas.app.enums.Rarity;
@@ -29,9 +30,17 @@ public class WorkerTXT extends SwingWorker<Void, Void> {
             StringBuilder sb = new StringBuilder();
             String slug = this.data.get("slug");
 
-            sb.append("Nombre;Edición;Id;Tipo;Rareza;Raza;Daño;Costo;Habilidad\n");
+            sb.append("Nombre;Edición;Id;Tipo;Rareza;Raza;Daño;Costo;Habilidad;Ruta\n");
 
             for (Card card : this.cardList) {
+                
+                String imgPath = String.format(this.data.get("ruta") + "\\%s\\%s\\%s.png",
+                        card.getEd_slug(),
+                        CardType.fromId(String.valueOf(card.getType())).getSlug(),
+                        card.getId() + "_" + card.getName());
+                
+                String habilidad = limpiarTexto(card.getAbility());
+                
                 sb.append(card.getName()).append(";");
                 sb.append(card.getEd_slug()).append(";");
                 sb.append(card.getEdid()).append(";");
@@ -40,7 +49,8 @@ public class WorkerTXT extends SwingWorker<Void, Void> {
                 sb.append(Race.fromId(String.valueOf(card.getRace())).getDisplayName()).append(";");
                 sb.append(card.getDamage()).append(";");
                 sb.append(card.getCost()).append(";");
-                sb.append("'").append(card.getAbility() == null ? "'" : card.getAbility().replaceAll("\n", "")).append("'");
+                sb.append(habilidad).append(";");
+                sb.append(imgPath);
                 sb.append("\n");
             }
 
@@ -54,5 +64,7 @@ public class WorkerTXT extends SwingWorker<Void, Void> {
 
         return null;
     }
+    
+    
 
 }

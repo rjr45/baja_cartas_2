@@ -16,17 +16,12 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import javax.swing.SwingWorker;
@@ -86,14 +81,14 @@ public class WorkerDescarga extends SwingWorker<Void, String> {
                 8,
                 8,
                 60L, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(32),
+                new ArrayBlockingQueue<>(8),
                 new ThreadPoolExecutor.CallerRunsPolicy()
         );
         ThreadPoolExecutor processPool = new ThreadPoolExecutor(
                 6,
                 6,
                 60L, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(12),
+                new ArrayBlockingQueue<>(4),
                 new ThreadPoolExecutor.CallerRunsPolicy()
         );
 
@@ -112,11 +107,7 @@ public class WorkerDescarga extends SwingWorker<Void, String> {
                         try {
                             int hechas = completadas.incrementAndGet();
                             procesarYGuardar(bytes, horizontal, vertical, card);
-                            
-                            if (hechas % 20 == 0) {
-                                System.gc();
-                            }
-                            
+
                             if (hechas % 20 == 0) {
                                 publish(String.format(
                                         "POOL D[%d/%d] P[%d/%d]",
@@ -126,6 +117,7 @@ public class WorkerDescarga extends SwingWorker<Void, String> {
                                         processPool.getQueue().size()
                                 ));
                             }
+                            
                             actualizarProgreso(hechas, total, card, "ok");
                         } catch (IOException ex) {
                             actualizarProgreso(completadas.get(), total, card, "error");

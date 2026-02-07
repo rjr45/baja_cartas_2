@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Style;
@@ -20,6 +21,7 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 import org.rjr.baja_cartas.app.model.Card;
 import org.rjr.baja_cartas.app.ui.BajaCartas;
+import org.rjr.baja_cartas.app.ui.BajaCartolas;
 import org.rjr.baja_cartas.app.worker.WorkerCardList;
 import org.rjr.baja_cartas.app.worker.WorkerDescarga;
 import org.rjr.baja_cartas.app.worker.WorkerTXT;
@@ -28,6 +30,7 @@ import org.rjr.baja_cartas.app.worker.WorkerXLS;
 public class ControladorBajaCartas {
 
     private final BajaCartas bajaCartas;
+    private final BajaCartolas bajaCartolas;
     private String destino;
     private boolean workerDescargaDone;
     private boolean workerTxtDone;
@@ -40,8 +43,9 @@ public class ControladorBajaCartas {
 
     private static final DateTimeFormatter LOG_TIME = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
-    public ControladorBajaCartas(BajaCartas bajaCartas) {
+    public ControladorBajaCartas(BajaCartas bajaCartas, BajaCartolas bajaCartolas) {
         this.bajaCartas = bajaCartas;
+        this.bajaCartolas = bajaCartolas;
         this.destino = "";
         this.workerDescargaDone = true;
         this.workerTxtDone = true;
@@ -54,12 +58,18 @@ public class ControladorBajaCartas {
     }
 
     public void run() {
-        this.bajaCartas.btnSetDestination.addActionListener(e -> setDestino());
-        this.bajaCartas.btnDescargar.addActionListener(e -> descargar());
-        this.bajaCartas.txtEdicion.addFocusListener(this.focusLostTxtEdicion());
-        this.ramLog();
-        this.bajaCartas.setLocationRelativeTo(null);
-        this.bajaCartas.setVisible(true);
+        if (Util.isNotOpen(this.bajaCartas.getTitle(), bajaCartolas)) {
+            this.bajaCartas.btnSetDestination.addActionListener(e -> setDestino());
+            this.bajaCartas.btnDescargar.addActionListener(e -> descargar());
+            this.bajaCartas.txtEdicion.addFocusListener(this.focusLostTxtEdicion());
+            this.bajaCartolas.dskMain.add(bajaCartas);
+            this.bajaCartas.pack();
+            SwingUtilities.invokeLater(() -> {
+                this.bajaCartas.setLocation((this.bajaCartolas.dskMain.getWidth() - this.bajaCartas.getWidth()) / 2,
+                        (this.bajaCartolas.dskMain.getHeight() - this.bajaCartas.getHeight()) / 2);
+                this.bajaCartas.setVisible(true);
+            });
+        }
     }
 
     private void setDestino() {
@@ -104,7 +114,7 @@ public class ControladorBajaCartas {
     }
 
     private HashMap<String, String> getData() {
-        HashMap<String, String> data = new HashMap<>(5);
+        HashMap<String, String> data = new HashMap<>(6);
         data.put("slug", this.bajaCartas.txtEdicion.getText());
         data.put("txt", String.valueOf(this.bajaCartas.chkTxt.isSelected()));
         data.put("xlsx", String.valueOf(this.bajaCartas.chkXLS.isSelected()));

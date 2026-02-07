@@ -1,6 +1,6 @@
 package org.rjr.baja_cartas.app.ui;
 
-public class BajaCartas extends javax.swing.JFrame {
+public class BajaCartas extends javax.swing.JInternalFrame {
    
     public BajaCartas() {
         initComponents();
@@ -32,7 +32,7 @@ public class BajaCartas extends javax.swing.JFrame {
         txtLogDescarga = new javax.swing.JTextPane();
         lblRam = new javax.swing.JLabel();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Baja Cartas 3000");
         setMinimumSize(new java.awt.Dimension(620, 250));
         setResizable(false);

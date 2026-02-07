@@ -7,6 +7,7 @@ import javax.swing.SwingWorker;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.rjr.baja_cartas.app.controller.Util;
 import org.rjr.baja_cartas.app.enums.CardType;
 import org.rjr.baja_cartas.app.enums.Race;
 import org.rjr.baja_cartas.app.enums.Rarity;
@@ -57,9 +58,9 @@ public class WorkerXLS extends SwingWorker<Void, Void> {
                     row.createCell(5).setCellValue(Race.fromId(String.valueOf(card.getRace())).getDisplayName());
                     row.createCell(6).setCellValue(card.getDamage());
                     row.createCell(7).setCellValue(card.getCost());
-                    row.createCell(8).setCellValue(card.getAbility());
+                    row.createCell(8).setCellValue(Util.limpiarTexto(card.getAbility()));
                 }
-            }catch(Exception ex){
+            } catch (Exception ex) {
                 System.out.println("X_X");
             }
 
